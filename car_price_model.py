@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
-import joblib
+
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.pipeline import Pipeline
 
 # -------- PAGE CONFIG --------
 st.set_page_config(
@@ -185,21 +189,60 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# -------- LOAD MODEL --------
+# -------- LOAD DATA + TRAIN MODEL FROM CSV --------
 @st.cache_resource
-def load_model():
-    return joblib.load("car_price_model.pkl")
-
-model = load_model()
-
-# -------- LOAD VEHICLE NAMES --------
-@st.cache_resource
-def get_vehicle_names(csv_path="car data.csv"):
+def load_data(csv_path="car data.csv"):
     df = pd.read_csv(csv_path)
-    names = df["Car_Name"].astype(str).str.strip().str.title().unique().tolist()
-    return sorted(names)
+    # Clean/standardize car names
+    df["Car_Name"] = df["Car_Name"].astype(str).str.strip().str.title()
+    return df
 
-vehicle_names = get_vehicle_names()
+@st.cache_resource
+def train_model():
+    df = load_data()
+
+    feature_cols = [
+        "Car_Name",
+        "Year",
+        "Present_Price",
+        "Kms_Driven",
+        "Fuel_Type",
+        "Seller_Type",
+        "Transmission",
+        "Owner",
+    ]
+    X = df[feature_cols]
+    y = df["Selling_Price"]
+
+    cat_cols = ["Car_Name", "Fuel_Type", "Seller_Type", "Transmission"]
+    num_cols = ["Year", "Present_Price", "Kms_Driven", "Owner"]
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("cat", OneHotEncoder(handle_unknown="ignore"), cat_cols),
+            ("num", "passthrough", num_cols),
+        ]
+    )
+
+    model = RandomForestRegressor(
+        n_estimators=200,
+        random_state=42,
+    )
+
+    pipe = Pipeline(
+        steps=[
+            ("preprocess", preprocessor),
+            ("model", model),
+        ]
+    )
+
+    pipe.fit(X, y)
+
+    # Vehicle names for dropdown
+    vehicle_names = sorted(df["Car_Name"].unique().tolist())
+    return pipe, vehicle_names
+
+model, vehicle_names = train_model()
 
 # -------- FORM UI: 4–4 SPLIT --------
 with st.container():
@@ -209,7 +252,6 @@ with st.container():
 
     with st.form("predict_form"):
 
-        # EXACT 4 FIELDS EACH SIDE
         col1, col2 = st.columns(2, gap="large")
 
         with col1:
@@ -230,23 +272,27 @@ with st.container():
 
 # -------- PREDICT --------
 if submitted:
-    input_df = pd.DataFrame([{
-        "Car_Name": vehicle_name,
-        "Year": year,
-        "Present_Price": present_price,
-        "Kms_Driven": kms_driven,
-        "Fuel_Type": fuel_type,
-        "Seller_Type": seller_type,
-        "Transmission": transmission,
-        "Owner": owner
-    }])
+    input_df = pd.DataFrame(
+        [
+            {
+                "Car_Name": vehicle_name,
+                "Year": year,
+                "Present_Price": present_price,
+                "Kms_Driven": kms_driven,
+                "Fuel_Type": fuel_type,
+                "Seller_Type": seller_type,
+                "Transmission": transmission,
+                "Owner": owner,
+            }
+        ]
+    )
 
     price = model.predict(input_df)[0]
 
     st.markdown('<div class="pred-box">', unsafe_allow_html=True)
     st.markdown(
         '<div class="pred-value">₹ {:,.2f}</div>'.format(price * 100000),
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
     st.caption("*(Model output is in Lakhs, multiplied by 1,00,000)*")
     st.markdown("</div>", unsafe_allow_html=True)

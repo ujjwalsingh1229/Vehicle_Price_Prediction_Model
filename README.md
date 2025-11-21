@@ -18,4 +18,13 @@ This project predicts the selling price of a vehicle using a fully connected neu
 
 | Component | Technologies |
 |----------|--------------|
-| Programming
+| Programming Language | Python |
+| Machine Learning | Scikit-Learn (MLPRegressor) |
+| Preprocessing | Pandas, NumPy |
+| UI / Deployment | Streamlit |
+| Model Storage | Joblib / Pickle |
+
+---
+
+## 📂 Project Structure
+

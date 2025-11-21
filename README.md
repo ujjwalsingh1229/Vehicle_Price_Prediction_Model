@@ -28,3 +28,15 @@ This project predicts the selling price of a vehicle using a fully connected neu
 
 ## 📂 Project Structure
 
+├── data/
+│ └── dataset.csv
+├── model/
+│ └── vehicle_model.pkl
+├── src/
+│ ├── preprocessing.py
+│ ├── train_mlp.py
+│ └── predict.py
+├── app.py # Streamlit App
+├── requirements.txt
+└── README.md
+

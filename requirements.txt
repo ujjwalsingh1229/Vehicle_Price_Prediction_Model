@@ -2,22 +2,4 @@ streamlit
 pandas
 numpy
 scikit-learn
-joblib   # optional now, but can keep
-``` :contentReference[oaicite:1]{index=1}  
-
----
-
-## 2️⃣ Clean up repo (optional but recommended)
-
-In your GitHub repo, you can now **delete the old `.pkl` file** since we don’t use it:
-
-- `car_price_model.pkl` → can be removed
-
-Locally:
-
-```bash
-git rm car_price_model.pkl
-git add car_price_model.py
-git commit -m "Train model from CSV inside app (no pickle)"
-git push
-
+joblib
